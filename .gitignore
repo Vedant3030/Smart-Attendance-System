@@ -1,0 +1,8 @@
+weights/
+venv/
+__pycache__/
+*.pyc
+yolov8n.pt
+weights/
+.env
+.DS_Store

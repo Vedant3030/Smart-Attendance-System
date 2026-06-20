@@ -1,0 +1,88 @@
+-- Classes table
+CREATE TABLE IF NOT EXISTS Classes (
+    class_id SERIAL PRIMARY KEY,
+    class_name VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS Subjects (
+    subject_id SERIAL PRIMARY KEY,
+    subject_name VARCHAR(200) UNIQUE NOT NULL,
+    subject_code VARCHAR(100) UNIQUE,
+    semester INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- Students table
+CREATE TABLE IF NOT EXISTS Students (
+    prn_no VARCHAR(20) PRIMARY KEY,
+    class_id INTEGER REFERENCES Classes(class_id),
+    roll_no INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_roll_in_class UNIQUE (class_id, roll_no)
+);
+
+-- FaceEncodings table
+CREATE TABLE IF NOT EXISTS FaceEncodings (
+    encoding_id SERIAL PRIMARY KEY,
+    prn_no VARCHAR(20) REFERENCES Students(prn_no) ON DELETE CASCADE,
+    encoding_data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessions table to track active classroom sessions
+CREATE TABLE IF NOT EXISTS Sessions (
+    session_id SERIAL PRIMARY KEY,
+    class_id INTEGER REFERENCES Classes(class_id) ON DELETE CASCADE,
+    subject_id INTEGER REFERENCES Subjects(subject_id) ON DELETE CASCADE,
+    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'active' -- 'active', 'completed'
+);
+
+-- SessionDetections table (tracks ticks during the session)
+CREATE TABLE IF NOT EXISTS SessionDetections (
+    detection_id SERIAL PRIMARY KEY,
+    session_id INTEGER REFERENCES Sessions(session_id) ON DELETE CASCADE,
+    prn_no VARCHAR(20) REFERENCES Students(prn_no) ON DELETE CASCADE,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AttendanceLog table
+CREATE TABLE IF NOT EXISTS AttendanceLog (
+    log_id SERIAL PRIMARY KEY,
+    prn_no VARCHAR(20) REFERENCES Students(prn_no) ON DELETE CASCADE,
+    subject_id INTEGER REFERENCES Subjects(subject_id) ON DELETE CASCADE,
+    session_id INTEGER REFERENCES Sessions(session_id) ON DELETE CASCADE,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    presence_percentage FLOAT DEFAULT 0.0,
+    status VARCHAR(20) DEFAULT 'absent'
+);
+
+-- Alter existing tables if they already exist
+ALTER TABLE AttendanceLog ADD COLUMN IF NOT EXISTS session_id INTEGER REFERENCES Sessions(session_id) ON DELETE CASCADE;
+ALTER TABLE AttendanceLog ADD COLUMN IF NOT EXISTS presence_percentage FLOAT DEFAULT 0.0;
+
+INSERT INTO Subjects (subject_name, subject_code, semester) VALUES
+('Engineering Mathematics-I', 'BSC-101-BES', 1),
+('Engineering Physics / Engineering Chemistry', 'BSC-102-BES_BSC-103-BES', 1),
+('Basic Electronics Engineering / Basic Electrical Engineering', 'ESC-101-ETC_ESC-102-ELE', 1),
+('Engineering Graphics / Engineering Mechanics', 'ESC-103-MEC_ESC-104-CVL', 1),
+('Fundamentals of Programming Languages', 'ESC-105-COM', 1),
+('Manufacturing Practice Workshop / Design Thinking and Idea Lab', 'VSE-101_VSE-102', 1),
+
+('Engineering Mathematics-II', 'BSC-151-BES', 2),
+('Engineering Chemistry / Engineering Physics', 'BSC-103-BES_BSC-102-BES', 2),
+('Basic Electrical Engineering / Basic Electronics Engineering', 'ESC-102-ELE_ESC-101-ETC', 2),
+('Engineering Mechanics / Engineering Graphics', 'ESC-104-CVL_ESC-103-MEC', 2),
+('Programming and Problem Solving', 'PCC-151-ITT', 2),
+('Design Thinking and Idea Lab / Manufacturing Practice Workshop', 'VSE-102_VSE-101', 2)
+ON CONFLICT (subject_name) DO NOTHING;
+
+INSERT INTO Classes (class_name) VALUES
+    ('Computer Science - COMP 1'),
+    ('Computer Science - COMP 2'),
+    ('Computer Science - COMP 3')
+ON CONFLICT (class_name) DO NOTHING;
